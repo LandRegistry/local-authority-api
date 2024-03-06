@@ -1,0 +1,384 @@
+swagger: '2.0'
+info:
+  description: Local Land Charge Local Authority API
+  version: 1.0.0
+  title: Report API
+host: 'localhost:8080'
+basePath: /v1.0
+schemes:
+  - http
+paths:
+
+  /local-authorities:
+    post:
+      description: Retrieve authorities that are intersecting or close to the given extent
+      produces:
+       - application/json
+      parameters:
+        - in: body
+          name: geometry
+          required: true
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+                example: geometrycollection
+              geometries:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [point, linestring, polygon, multipoint, multilinestring, multipolygon]
+                      example: point
+                    coordinates:
+                      type: array
+                      example: [1234.567 , 9876.543]
+                      items:
+                        type: number
+                    crs:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: name
+                        properties:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              example: EPSG:27700
+      responses:
+        200:
+          description: Authorities found and returned
+          schema:
+            type : object
+            properties:
+              Exeter City Council:
+                type: object
+                properties:
+                  migrated:
+                    type: boolean
+                  maintenance:
+                    type: boolean
+              East Devon District Council:
+                type: object
+                properties:
+                  migrated:
+                    type: boolean
+                  maintenance:
+                    type: boolean
+        400:
+          description: Bad request
+        404:
+          description: No authorities found intersecting or near extend
+        500:
+          description: Application error
+
+  /local-authorities/{local_authority}/bounding_box:
+    get:
+      description: Retrieve GeoJSON feature of bounding box for authority
+      operationId: getReportInformation
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: local_authority
+          required: true
+          type: string
+          description: Originating authority to get bounding box for
+
+      responses:
+        200:
+          $ref: "#/responses/geojson"
+
+  /local-authorities/{local_authority}/boundary:
+    get:
+      description: Retrieve GeoJSON feature of boundary for authority
+      operationId: getBoundary
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: local_authority
+          required: true
+          type: string
+          description: Originating authority to get boundary for
+
+      responses:
+        200:
+          $ref: "#/responses/geojson"
+
+  /organisations:
+    get:
+      description: Retrieve a specific list of organisations, their migrated and maintenance statuses, and historic names from the organisation table in the geoserver database based on type id
+      operationId: getOrganisations
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          type: string
+          name: organisation_type
+          required: false
+          description: Used to determine which list of organisations will be returned
+      responses:
+        200:
+          description: The list of organisations, their migrated, maintenance and notice statuses, and historic names
+        404:
+          description: No organisations found
+        500:
+          description: Application error
+
+  /organisations/{organisation}:
+    get:
+      description: Retrieve the current name for an organisation given its historic or current name supplied
+      operationId: getLatestOrganisationName
+      produces:
+        - application/json
+      responses:
+        200:
+          description: The current organisation name
+        404:
+          description: Organisation not found
+        500:
+          description: Application error
+
+  /organisations/add:
+    post:
+      description: Add a new organisation (OOA or SOOA) as long as the title is not an existing or historic name
+      operationId: add_organisation
+      consumes:
+        - application/json
+        parameters:
+          - in: body
+              name: title
+              required: true
+              description: The name of the new organisation
+              schema:
+                type: string
+          - in: body
+              name: type
+              required: true
+              description: The type of the new organisation, if "sooa" then new organisation will be created as sensitive, all other values will result in a standard OOA being created
+              schema:
+                type: string
+        responses:
+          200:
+            description: The organisation was created successfully
+          400:
+            description: The input failed validation, or the organisation already exists
+          500:
+            description: Application error
+
+  /organisations/edit:
+    post:
+      description: Change an existing organisation (OOA or SOOA) title, as long as the new title is not used as an historic title for a different organisation
+      operationId: edit_organisation
+      consumes:
+        - application/json
+        parameters:
+          - in: body
+              name: title
+              required: true
+              description: The name of the organisation
+              schema:
+                type: string
+          - in: body
+              name: new_title
+              required: true
+              description: The new name for the organisation
+              schema:
+                type: string
+        responses:
+          200:
+            description: The organisation was edited successfully
+          400:
+            description: The input failed validation, or the new name already exists for a different organisation
+          500:
+            description: Application error
+
+  /organisations/{organisation}/migrated:
+    put:
+      description: Update an organisation's migrated status.
+      operationId: putOrganisationMigrated
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: organisation
+          required: true
+          type: string
+          description: Organisation/authority to update migrated status for
+        - in: body
+          name: migrated
+          required: true
+          description: The new migrated status
+          schema:
+              type: boolean
+      responses:
+        200:
+          description: The organisation's migrated status was updated successfully
+        400:
+          description: The input failed validation, or a JSON body has not been supplied
+        404:
+          description: The supplied organisation was not found
+
+  /organisations/{organisation}/notice:
+    put:
+      description: Update an organisation's notice period status.
+      operationId: putOrganisationNotice
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: organisation
+          required: true
+          type: string
+          description: Organisation/authority to update migrated status for
+        - in: body
+          name: notice
+          required: true
+          description: The new notice status
+          schema:
+              type: boolean
+      responses:
+        200:
+          description: The organisation's notice status was updated successfully
+        400:
+          description: The input failed validation, or a JSON body has not been supplied
+        404:
+          description: The supplied organisation was not found
+          
+  /organisations/{organisation}/maintenance:
+    put:
+      description: Update an organisation's maintenance status.
+      operationId: putOrganisationMaintenance
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: organisation
+          required: true
+          type: string
+          description: Organisation/authority to update maintenance status for
+        - in: body
+          name: maintenance
+          required: true
+          description: The new maintenance status
+          schema:
+              type: boolean
+      responses:
+        200:
+          description: The organisation's maintenance status was updated successfully
+        400:
+          description: The input failed validation, or a JSON body has not been supplied
+        404:
+          description: The supplied organisation was not found
+
+  /plus_minus_buffer:
+    post:
+      description: Returns lists of authorities in different statuses using boundaries plus and minus the defined buffer area
+      produces:
+       - application/json
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+                example: geometrycollection
+              geometries:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [point, linestring, polygon, multipoint, multilinestring, multipolygon]
+                      example: point
+                    coordinates:
+                      type: array
+                      example: [1234.567 , 9876.543]
+                      items:
+                        type: number
+      responses:
+        200:
+          description: Object defining within a migrated authority or not.
+          schema:
+            type: object
+            properties:
+              migrated_list:
+                type: array
+                description: List of migrated authorites (plus buffer) which intersect the requested area
+                items:
+                  type: string
+                  description: Authority name
+              plus_buffer:
+                type: object
+                description: Lists of authorities (plus buffer) which intersect the requested area
+                properties:
+                  non_migrated_list:
+                    type: array
+                    description: Array of authorities which are non-migrated
+                    items:
+                      type: string
+                      description: Authority name
+                  maintenance_list:
+                    type: array
+                    description: Array of authorities which are under maintenance
+                    items:
+                      type: string
+                      description: Authority name
+                  includes_scotland:
+                    type: boolean
+                    description: Whether the requested area intersects a scottish authority
+              minus_buffer:
+                type: object
+                description: Lists of authorities (minus buffer) which intersect the requested area
+                properties:
+                  non_migrated_list:
+                    type: array
+                    description: Array of authorities which are non-migrated
+                    items:
+                      type: string
+                      description: Authority name
+                  maintenance_list:
+                    type: array
+                    description: Array of authorities which are under maintenance
+                    items:
+                      type: string
+                      description: Authority name
+                  includes_scotland:
+                    type: boolean
+                    description: Whether the requested area intersects a scottish authority
+        400:
+          description: Bad request
+        500:
+          description: Application error
+
+definitions:
+  geojson:
+    type: object
+    properties:
+      'type':
+        type: string
+        enum:
+          - Feature
+      geometry:
+        type: object
+      'properties':
+        type: object
+        properties:
+          local-authority-name:
+            type: string
+
+responses:
+  geojson:
+    description: GeoJSON feature of the authority's bounding box
+    schema:
+      $ref: "#/definitions/geojson"

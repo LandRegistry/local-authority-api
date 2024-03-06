@@ -1,0 +1,16 @@
+Flask==2.3.2
+Flask-LogConfig==0.4.2
+requests==2.31.0
+Flask-SQLAlchemy==3.0.3
+SQLAlchemy==2.0.16
+GeoAlchemy2==0.13.3
+psycopg2==2.9.6
+Flask-Migrate==4.0.4
+alembic==1.11.1
+Shapely==2.0.1
+git+http://internal-git-host/llc-beta/jwt-validation.git@v1.2.3
+jsonschema==4.17.3
+flask-negotiate==0.1.0
+gunicorn==20.1.0
+werkzeug==2.3.6
+PyYAML==6.0

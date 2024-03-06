@@ -1,0 +1,7 @@
+[run]
+# Omit boiler plate code
+omit = local_authority_api/dependencies/rabbitmq.py
+	   local_authority_api/dependencies/postgres.py
+	   local_authority_api/views/general.py
+	   local_authority_api/exceptions.py
+	   
